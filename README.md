@@ -50,7 +50,7 @@ npm install
 コード内で `// ★★★ 手動設定 ★★★` とコメントされている箇所を確認し、必要に応じて修正してください。
 
 主な設定項目:
-- **メタデータ行（2行目）**: 現法コード（`from_subsidiary_code`, `to_subsidiary_code`）、言語コード（`from_language_code`, `to_language_code`）<br>**※!!!注意!!! カテゴリコード(`category_code`) は、スクリプトでは自動設定できないため、TSV 生成後に実際のサイトのページを確認してカテゴリを設定してください。** 
+- **メタデータ行（2行目）**: 現法コード（`from_subsidiary_code`, `to_subsidiary_code`）、言語コード（`from_language_code`, `to_language_code`）<br>**※!!!注意!!! カテゴリコード(`category_code`) は、シリーズコードによって異なるため、TSV 生成後に実際のサイトのページを確認してカテゴリを設定してください。** 
 - **参照URL**: `referenceUrl` EC サイトの実際の URL。対象の現法によって URL が異なる。
 
 該当コード例 (`src/generate-mtd-tsv-format.ts`):
