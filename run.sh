@@ -7,6 +7,12 @@
 
 series_filter_dir='data/series-code-filter'
 
+# ログファイルを初期化
+log_file="logs/warning.log"
+if [ -f "$log_file" ]; then
+  rm "$log_file"
+fi
+
 if [ ! -d "$series_filter_dir" ]; then
   echo "Error: Directory not found: $series_filter_dir"
   exit 1

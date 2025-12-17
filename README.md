@@ -14,6 +14,7 @@ npm install
    `data/mdm-dump-tsv` ディレクトリ配下に、対象のリージョンディレクトリ（例: `MJPJPN`）を作成し、以下のTSVファイルを配置してください。
 
    - `m_series.tsv`: ブランドコードとシリーズコードを紐づけるダンプ
+   - `m_category_series.tsv`: カテゴリコードとシリーズコードを紐づけるダンプ
    - `m_series_language.tsv`: シリーズマスタのダンプ
    - `m_series_wysiwyg_language.tsv`: WYSIWYGのダンプ
 
@@ -23,6 +24,7 @@ npm install
      mdm-dump-tsv/
        MJPJPN/
          m_series.tsv
+         m_category_series.tsv
          m_series_language.tsv
          m_series_wysiwyg_language.tsv
    ```
@@ -44,14 +46,18 @@ npm install
 スクリプトは `data/series-code-filter` 内のファイルを読み込み、自動的に抽出と変換処理を行います。
 生成されたファイルは `output/mtd-tsv` ディレクトリに出力されます。
 
+処理中に警告が発生した場合（例：ブランドコードやカテゴリコードが見つからない場合）は、コンソールおよび `logs/warning.log` に出力されます。
+
 ## 手動設定が必要な項目
 
 `src/generate-mtd-tsv-format.ts` ファイル内には、手動で設定が必要な箇所があります。
 コード内で `// ★★★ 手動設定 ★★★` とコメントされている箇所を確認し、必要に応じて修正してください。
 
 主な設定項目:
-- **メタデータ行（2行目）**: 現法コード（`from_subsidiary_code`, `to_subsidiary_code`）、言語コード（`from_language_code`, `to_language_code`）<br>**※!!!注意!!! カテゴリコード(`category_code`) は、シリーズコードによって異なるため、TSV 生成後に実際のサイトのページを確認してカテゴリを設定してください。** 
+- **メタデータ行（2行目）**: 現法コード（`from_subsidiary_code`, `to_subsidiary_code`）、言語コード（`from_language_code`, `to_language_code`）
 - **参照URL**: `referenceUrl` EC サイトの実際の URL。対象の現法によって URL が異なる。
+
+※カテゴリコード(`category_code`) とブランドコード(`brand_code`) は、ダンプファイルから自動的に取得されます。見つからない場合はデフォルト値が設定され、警告ログが出力されます。
 
 該当コード例 (`src/generate-mtd-tsv-format.ts`):
 
@@ -60,8 +66,8 @@ npm install
     // メタデータ行（2行目）
     const metaData = [
         // ...
-        "M1803060000", //  注意：TSV 生成後に実際のサイトのページを確認してカテゴリを設定してください。
-        // ...
+        seriesData.category_code, // category_code は自動設定済み
+        seriesData.brand_code, // brand_code は自動設定済み
         "MJP", // from_subsidiary_code
         "JPN", // from_language_code
         "COM", // to_subsidiary_code

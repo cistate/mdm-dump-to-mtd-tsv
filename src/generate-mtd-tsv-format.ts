@@ -12,6 +12,21 @@ export interface SeriesData {
     series_notice_top_5: string;
     html_list: string[];
     brand_code: string;
+    category_code: string;
+}
+
+// ログ出力
+export function logWarning(message: string) {
+    console.warn(message);
+
+    const logDir = "logs";
+    if (!fs.existsSync(logDir)) {
+        fs.mkdirSync(logDir, { recursive: true });
+    }
+
+    const logFile = path.join(logDir, "warning.log");
+    const timestamp = new Date().toISOString();
+    fs.appendFileSync(logFile, `[${timestamp}] ${message}\n`);
 }
 
 // TSVファイルを読み込む
@@ -23,6 +38,13 @@ export function readTsv(filePath: string): string[][] {
 
 // m_series.tsv から brand_code を読み込む
 export function loadBrandCodes(mSeriesFile: string): Map<string, string> {
+    if (!fs.existsSync(mSeriesFile)) {
+        logWarning(
+            `Warning: m_series file not found: ${mSeriesFile}. Proceeding with empty brand codes.`
+        );
+        return new Map<string, string>();
+    }
+
     const rows = readTsv(mSeriesFile);
     const headers = rows[0];
     const seriesCodeIdx = headers.indexOf("series_code");
@@ -44,11 +66,53 @@ export function loadBrandCodes(mSeriesFile: string): Map<string, string> {
     return brandCodeMap;
 }
 
+// m_category_series.tsv から category_code を読み込む
+export function loadCategoryCodes(mCategorySeriesFile: string): Map<string, string> {
+    if (!fs.existsSync(mCategorySeriesFile)) {
+        logWarning(
+            `Warning: m_category_series file not found: ${mCategorySeriesFile}. Proceeding with empty category codes.`
+        );
+        return new Map<string, string>();
+    }
+
+    const rows = readTsv(mCategorySeriesFile);
+    const headers = rows[0];
+    const seriesCodeIdx = headers.indexOf("series_code");
+    const categoryCodeIdx = headers.indexOf("category_code");
+    const deleteFlagIdx = headers.indexOf("delete_flag");
+
+    if (seriesCodeIdx === -1 || categoryCodeIdx === -1) {
+        throw new Error(
+            "Required columns (series_code, category_code) not found in m_category_series file"
+        );
+    }
+
+    const categoryCodeMap = new Map<string, string>();
+    for (let i = 1; i < rows.length; i++) {
+        const row = rows[i];
+        const seriesCode = row[seriesCodeIdx];
+        const categoryCode = row[categoryCodeIdx];
+        const deleteFlag = deleteFlagIdx !== -1 ? row[deleteFlagIdx] : "0";
+
+        // delete_flag が 1 の場合はスキップ
+        if (deleteFlag === "1") {
+            continue;
+        }
+
+        if (seriesCode && categoryCode) {
+            categoryCodeMap.set(seriesCode, categoryCode);
+        }
+    }
+    return categoryCodeMap;
+}
+
 // extracted_m_series_language.tsvとextracted_m_series_wysiwyg_language.tsvからデータを抽出
 export function extractSeriesData(
     languageFile: string,
     wysiwygFile: string,
-    brandCodeMap: Map<string, string>
+    brandCodeMap: Map<string, string>,
+    categoryCodeMap: Map<string, string>,
+    region: string
 ): SeriesData[] {
     const languageRows = readTsv(languageFile);
     const languageHeaders = languageRows[0];
@@ -106,6 +170,20 @@ export function extractSeriesData(
         const noticeTop5 = noticeTop5Idx !== -1 ? row[noticeTop5Idx] : "";
 
         if (seriesCode && seriesName) {
+            const brandCode = brandCodeMap.get(seriesCode);
+            if (!brandCode) {
+                logWarning(
+                    `Warning: Brand code not found for series: ${seriesCode} (Region: ${region})`
+                );
+            }
+
+            const categoryCode = categoryCodeMap.get(seriesCode);
+            if (!categoryCode) {
+                logWarning(
+                    `Warning: Category code not found for series: ${seriesCode} (Region: ${region})`
+                );
+            }
+
             seriesDataList.push({
                 series_code: seriesCode,
                 series_name: seriesName,
@@ -116,7 +194,8 @@ export function extractSeriesData(
                 series_notice_top_4: noticeTop4 || "",
                 series_notice_top_5: noticeTop5 || "",
                 html_list: htmlMap.get(seriesCode) || [],
-                brand_code: brandCodeMap.get(seriesCode) || "MID1", // デフォルト値
+                brand_code: brandCode || "MSM1", // デフォルト値
+                category_code: categoryCode || "M1803060000", // デフォルト値
             });
         }
     }
@@ -152,7 +231,7 @@ export function generateMtdTsvFormat(
         "ECSI01202509173395", // 任意
         "DUP1000000215574", // 任意
         "el", // 任意
-        "M1803060000", // 注意：TSV 生成後に実際のサイトのページを確認してカテゴリを設定してください。
+        seriesData.category_code, // category_code は自動設定済み
         seriesData.brand_code, // brand_code は自動設定済み
         "MJP", // from_subsidiary_code
         "JPN", // from_language_code
@@ -266,12 +345,12 @@ export function generateMtdTsvFormat(
 export function main() {
     const args = process.argv.slice(2);
 
-    if (args.length < 3) {
+    if (args.length < 4) {
         console.error(
-            "Usage: ts-node src/generate-mtd-tsv-format.ts <series_tsv> <wysiwyg_tsv> <brand_code_tsv> [output_dir]"
+            "Usage: ts-node src/generate-mtd-tsv-format.ts <series_tsv> <wysiwyg_tsv> <brand_code_tsv> <category_code_tsv> [output_dir]"
         );
         console.error(
-            "Example: ts-node src/generate-mtd-tsv-format.ts output/extracted_m_series_language.tsv output/extracted_m_series_wysiwyg_language.tsv output/m_series.tsv output/mtd"
+            "Example: ts-node src/generate-mtd-tsv-format.ts output/extracted_m_series_language.tsv output/extracted_m_series_wysiwyg_language.tsv output/m_series.tsv data/mdm-dump-tsv/MJPJPN/m_category_series.tsv output/mtd"
         );
         process.exit(1);
     }
@@ -279,7 +358,8 @@ export function main() {
     const languageFile = args[0];
     const wysiwygFile = args[1];
     const mSeriesFile = args[2];
-    const outputDir = args[3] || "output/mtd";
+    const mCategorySeriesFile = args[3];
+    const outputDir = args[4] || "output/mtd";
     const prefix = "series-code";
 
     if (!fs.existsSync(languageFile)) {
@@ -292,19 +372,28 @@ export function main() {
         process.exit(1);
     }
 
-    if (!fs.existsSync(mSeriesFile)) {
-        console.error(`Error: m_series file not found: ${mSeriesFile}`);
-        process.exit(1);
-    }
+    // m_seriesFile は存在しなくても続行する（loadBrandCodes内で警告を出す）
+
+    // m_category_seriesFile は存在しなくても続行する（loadCategoryCodes内で警告を出す）
 
     // 出力ディレクトリを作成
     if (!fs.existsSync(outputDir)) {
         fs.mkdirSync(outputDir, { recursive: true });
     }
 
-    console.log(`Reading data from: ${languageFile}, ${wysiwygFile}, and ${mSeriesFile}`);
+    console.log(
+        `Reading data from: ${languageFile}, ${wysiwygFile}, ${mSeriesFile}, and ${mCategorySeriesFile}`
+    );
     const brandCodeMap = loadBrandCodes(mSeriesFile);
-    const seriesDataList = extractSeriesData(languageFile, wysiwygFile, brandCodeMap);
+    const categoryCodeMap = loadCategoryCodes(mCategorySeriesFile);
+    const region = path.basename(outputDir);
+    const seriesDataList = extractSeriesData(
+        languageFile,
+        wysiwygFile,
+        brandCodeMap,
+        categoryCodeMap,
+        region
+    );
     console.log(`Found ${seriesDataList.length} series`);
 
     let baseTaskDetailId = 3909817;
