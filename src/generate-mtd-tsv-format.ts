@@ -149,11 +149,11 @@ export function generateMtdTsvFormat(
     // ★★★ 手動設定 ★★★
     // メタデータ行（2行目）
     const metaData = [
-        "ECSI01202509173395",
-        "DUP1000000215574",
-        "el",
-        "M1803060000",
-        seriesData.brand_code, // brand_code
+        "ECSI01202509173395", // 任意
+        "DUP1000000215574", // 任意
+        "el", // 任意
+        "M1803060000", // 注意：TSV 生成後に実際のサイトのページを確認してカテゴリを設定してください。
+        seriesData.brand_code, // brand_code は自動設定済み
         "MJP", // from_subsidiary_code
         "JPN", // from_language_code
         "COM", // to_subsidiary_code
