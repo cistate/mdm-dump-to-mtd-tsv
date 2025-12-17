@@ -1,0 +1,31 @@
+{
+    "compilerOptions": {
+      "target": "es2019",
+      "module": "commonjs",
+      "strict": true,
+      "esModuleInterop": true,
+      "declaration": true,
+      "declarationMap": true,
+      "sourceMap": true,
+      "skipLibCheck": true,
+      "forceConsistentCasingInFileNames": true,
+      "noUnusedLocals": true,
+      "noUnusedParameters": true,
+      "noImplicitReturns": true,
+      "noFallthroughCasesInSwitch": true,
+      "rootDir": "src",
+      "outDir": "lib"
+    },
+    "include": [
+      "src"
+    ],
+    "exclude": [
+      ".git",
+      "node_modules",
+      "lib"
+    ],
+    "types": [
+      "htmlparser2"
+    ]
+  }
+  

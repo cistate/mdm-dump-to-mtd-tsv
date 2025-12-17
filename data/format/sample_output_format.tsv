@@ -1,0 +1,5 @@
+anken_id	duplication_manage_id	department_code	category_code	brand_code	from_subsidiary_code	from_language_code	to_subsidiary_code	to_language_code	translate_status
+ECSI01202509173395	DUP1000000215574	el	M1803060000	MID1	MJP	JPN	COM	ENG	1
+task_detail_id	record_seq	series_code	additional_item	reference_url	item_name	from_value	to_value
+3909817	1	110302677530	種類	https://jp.misumi-ec.com/vona2/detail/110302677530/	シリーズ名称	断熱材ツバ付カラー	
+3909818	2	110302677530	種類	https://jp.misumi-ec.com/vona2/detail/110302677530/	キャッチコピー	【特長】・断熱だけでなく、絶縁にも優れているツバ付カラーです！	
